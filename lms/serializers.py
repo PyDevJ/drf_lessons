@@ -21,6 +21,7 @@ class CourseSerializer(serializers.ModelSerializer):
             'name',
             'preview',
             'description',
+            'owner',
             'count_lessons',
             'lessons'
         ]

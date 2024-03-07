@@ -1,8 +1,8 @@
-from rest_framework import viewsets, generics
+from rest_framework import viewsets, generics, views, response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
-from lms.models import Course, Lesson
-from lms.serializers import CourseSerializer, LessonSerializer
+from lms.models import Course, Lesson, CourseSubscription
+from lms.serializers import CourseSerializer, LessonSerializer, CourseSubscriptionSerializer
 from users.permissions import IsModerator, IsOwner
 
 
@@ -80,3 +80,37 @@ class LessonUpdateAPIView(generics.UpdateAPIView):
 class LessonDestroyAPIView(generics.DestroyAPIView):
     queryset = Lesson.objects.all()
     permission_classes = [IsAuthenticated, IsOwner]
+
+
+class SubscriptionAPIView(views.APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        # Получает пользователя
+        user = request.user
+        # Получает id курса
+        course_id = request.data.get('course_id')
+        # Проверяет, передан ли идентификатор курса в запросе
+        if not course_id:
+            return response.Response({"message": "ID курса не указан"}, status=400)
+        # Получает объект курса из базы данных
+        course = generics.get_object_or_404(Course, id=course_id)
+        # Проверяет, существует ли уже подписка у пользователя на этот курс
+        subs_item = CourseSubscription.objects.filter(user=user, course=course)
+        # Если подписка у пользователя на этот курс есть, то удаляет её
+        if subs_item.exists():
+            subs_item.delete()
+            message = 'Подписка удалена'
+        # Если подписки у пользователя на этот курс нет, то создает её
+        else:
+            CourseSubscription.objects.create(user=user, course=course)
+            message = 'Подписка добавлена'
+        # Возвращает ответ в API
+        return response.Response({"message": message})
+
+
+class CourseSubscriptionListAPIView(generics.ListAPIView):
+    serializer_class = CourseSubscriptionSerializer
+
+    def get_queryset(self):
+        return CourseSubscription.objects.filter(user=self.request.user)

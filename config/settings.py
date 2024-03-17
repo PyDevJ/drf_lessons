@@ -148,13 +148,13 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PERMISSION_CLASSES': [
         # Позволяет неаутентифицированным пользователям иметь доступ к API только для чтения.
-        'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
+        # 'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly',
 
         # Установка прав по умолчанию только с авторизацией
         # 'rest_framework.permissions.IsAuthenticated',
 
         # Замена на права доступа для всех, права на авторизацию указываются отдельно
-        # 'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
@@ -174,3 +174,5 @@ CORS_ALLOWED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS = [
     "https://read-and-write.example.com",
 ]
+
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')

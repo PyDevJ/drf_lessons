@@ -19,6 +19,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class UserRegistrationView(generics.CreateAPIView):
+    """Регистрация пользователя"""
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     # Доступ всем пользователям

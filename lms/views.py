@@ -5,6 +5,7 @@ from lms.models import Course, Lesson, CourseSubscription
 from lms.paginators import LmsPagination
 from lms.serializers import CourseSerializer, LessonSerializer, CourseSubscriptionSerializer
 from users.permissions import IsModerator, IsOwner
+from lms.tasks import send_course_update_email
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -37,6 +38,17 @@ class CourseViewSet(viewsets.ModelViewSet):
         elif self.action == 'destroy':
             self.permission_classes = [IsAuthenticated, IsOwner]
         return super().get_permissions()
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        # После обновления курса вызывается задача для отправки уведомлений
+        send_course_update_email.delay(instance.id)
+        return response.Response(serializer.data)
 
 
 class LessonCreateAPIView(generics.CreateAPIView):

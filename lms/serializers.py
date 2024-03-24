@@ -25,6 +25,7 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'name',
+            'updated_at',
             'preview',
             'description',
             'owner',

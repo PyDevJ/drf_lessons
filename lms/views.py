@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import viewsets, generics, views, response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
@@ -5,6 +6,7 @@ from lms.models import Course, Lesson, CourseSubscription
 from lms.paginators import LmsPagination
 from lms.serializers import CourseSerializer, LessonSerializer, CourseSubscriptionSerializer
 from users.permissions import IsModerator, IsOwner
+from lms.tasks import send_course_update_email
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -37,6 +39,14 @@ class CourseViewSet(viewsets.ModelViewSet):
         elif self.action == 'destroy':
             self.permission_classes = [IsAuthenticated, IsOwner]
         return super().get_permissions()
+
+    def perform_update(self, serializer):
+        course_id = serializer.save(owner=self.request.user).id
+        send_course_update_email.delay(course_id)
+
+        # course = Course.objects.get(id=course_id)
+        # course.updated_at = timezone.now()
+        # course.save()
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -117,3 +127,4 @@ class CourseSubscriptionListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return CourseSubscription.objects.filter(user=self.request.user)
+        # return CourseSubscription.objects.all()

@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import viewsets, generics, views, response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
@@ -39,16 +40,13 @@ class CourseViewSet(viewsets.ModelViewSet):
             self.permission_classes = [IsAuthenticated, IsOwner]
         return super().get_permissions()
 
-    def update(self, request, *args, **kwargs):
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+    def perform_update(self, serializer):
+        course_id = serializer.save(owner=self.request.user).id
+        send_course_update_email.delay(course_id)
 
-        # После обновления курса вызывается задача для отправки уведомлений
-        send_course_update_email.delay(instance.id)
-        return response.Response(serializer.data)
+        # course = Course.objects.get(id=course_id)
+        # course.updated_at = timezone.now()
+        # course.save()
 
 
 class LessonCreateAPIView(generics.CreateAPIView):
@@ -129,3 +127,4 @@ class CourseSubscriptionListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         return CourseSubscription.objects.filter(user=self.request.user)
+        # return CourseSubscription.objects.all()
